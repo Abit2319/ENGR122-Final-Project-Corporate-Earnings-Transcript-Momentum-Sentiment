@@ -1,0 +1,163 @@
+install.packages("syuzhet")
+install.packages("rvest")
+install.packages("readr")
+install.packages("magrittr")
+install.packages("stringr")
+install.packages("dplyr")
+install.packages("quantmod")
+library(syuzhet)
+library(readr)
+library(magrittr)
+library(rvest)
+library(stringr)
+library(dplyr)
+library(quantmod)
+
+PreviousTranscript_url<- "https://www.fool.com/earnings/call-transcripts/2024/10/31/apple-aapl-q4-2024-earnings-call-transcript/"
+Previouswebpage <- read_html(PreviousTranscript_url)
+PreviousEarnings_Transcript1 <- Previouswebpage %>% html_nodes("p") %>% html_text()
+PreviousEarnings_Transcript <- PreviousEarnings_Transcript1[-(1:7)]
+
+PreviousTranscript <-get_sentences(PreviousEarnings_Transcript)
+
+print(length(PreviousTranscript))
+
+RecentTranscript_url<- "https://www.fool.com/earnings/call-transcripts/2025/01/30/apple-aapl-q1-2025-earnings-call-transcript/"
+Recentwebpage <- read_html(RecentTranscript_url)
+RecentEarnings_Transcript1 <- Recentwebpage %>% html_nodes("p") %>% html_text()
+RecentEarnings_Transcript <- RecentEarnings_Transcript1[-(1:7)]
+
+RecentTranscript <-get_sentences(RecentEarnings_Transcript)
+
+print(length(RecentTranscript))
+
+head(PreviousTranscript, 1)
+head(RecentTranscript, 1)
+
+PreviousEarnings_Sentiment<-get_sentiment(PreviousTranscript)
+RecentEarnings_Sentiment<-get_sentiment(RecentTranscript)
+PreviousEarnings_nrc<-get_nrc_sentiment(PreviousTranscript)
+RecentEarnings_nrc<-get_nrc_sentiment(RecentTranscript)
+
+head(PreviousEarnings_nrc)
+head(RecentEarnings_nrc)
+
+Previouspositive <- PreviousEarnings_nrc$positive
+Previousnegative <- PreviousEarnings_nrc$negative
+
+Previouspositive_count <- sum(Previouspositive)
+Previousnegative_count <- sum(Previousnegative)
+
+cat("Positive mentions:", Previouspositive_count, "\n")
+cat("Negative mentions:", Previousnegative_count, "\n")
+
+Previouspositive_percent <-(Previouspositive_count/(length(PreviousEarnings_Transcript)))
+cat("Positive percentage:", Previouspositive_percent, "\n")
+
+Previousnegative_percent <-(Previousnegative_count/(length(PreviousEarnings_Transcript)))
+cat("Negative percentage:", Previousnegative_percent, "\n")
+
+plot(PreviousEarnings_nrc$positive, type="l", col="green")
+lines(PreviousEarnings_nrc$negative, col="red")
+
+Recentpositive <- RecentEarnings_nrc$positive
+Recentnegative <- RecentEarnings_nrc$negative
+
+Recentpositive_count <- sum(Recentpositive)
+Recentnegative_count <- sum(Recentnegative)
+
+cat("Positive mentions:", Recentpositive_count, "\n")
+cat("Negative mentions:", Recentnegative_count, "\n")
+
+Recentpositive_percent <-(Recentpositive_count/(length(RecentEarnings_Transcript)))
+cat("Positive percentage:", Recentpositive_percent, "\n")
+
+Recentnegative_percent <-(Recentnegative_count/(length(RecentEarnings_Transcript)))
+cat("Negative percentage:", Recentnegative_percent, "\n")
+
+plot(RecentEarnings_nrc$positive, type="l", col="green")
+lines(RecentEarnings_nrc$negative, col="red")
+
+positive_percentchange <-(Recentpositive_percent/Previouspositive_percent-1)
+cat("Positive percentage:", positive_percentchange, "\n")
+
+negative_percentchange <- (0.1702454 / 0.1671779 ) - 1
+cat("Negative percentage change:", negative_percentchange, "\n")
+
+plot(PreviousEarnings_nrc$positive, type="l", col="green", main = "Previous Transcript")
+plot(RecentEarnings_nrc$positive, type="l", col="green",main = "Recent Transcript")
+
+plot(PreviousEarnings_nrc$negative, type="l", col="red",main = "Previous Transcript")
+plot(RecentEarnings_nrc$negative, type="l", col="red",main = "Recent Transcript")
+
+Previoustranscript_clean <- tolower(PreviousTranscript)
+Previoustranscript_clean <- gsub("[[:punct:]]", "", Previoustranscript_clean)
+words <- unlist(strsplit(Previoustranscript_clean, "\\s+"))
+
+sum(words == "inflation")
+sum(words == "tariffs")
+sum(words == "recession")
+sum(words == "trump")
+sum(words == "china")
+sum(words == "interest rates")
+sum(words == "ai")
+sum(words == "artificial intelligence")
+
+Previouskeywords <- c("inflation", "tariffs", "recession", "trump", "china", "interest rates", "ai", "artificial intelligence")
+Previousword_counts <- sapply(Previouskeywords, function(w) sum(words == w))
+df <- data.frame(
+  keyword = Previouskeywords,
+  count = Previousword_counts
+)
+barplot(df$count, names.arg = df$keyword, col = "black",
+        main = "Keyword Frequency in Previous Transcript",
+        ylab = "Count", las = 2)
+
+Recenttranscript_clean <- tolower(RecentTranscript)
+Recenttranscript_clean <- gsub("[[:punct:]]", "", Recenttranscript_clean)
+words <- unlist(strsplit(Recenttranscript_clean, "\\s+"))
+
+sum(words == "inflation")
+sum(words == "tariffs")
+sum(words == "recession")
+sum(words == "trump")
+sum(words == "china")
+sum(words == "interest rates")
+sum(words == "ai")
+sum(words == "artificial intelligence")
+
+
+Recentkeywords <- c("inflation", "tariffs", "recession", "trump", "china", "interest rates", "ai", "artificial intelligence")
+Recentword_counts <- sapply(Recentkeywords, function(w) sum(words == w))
+df <- data.frame(
+  keyword = Recentkeywords,
+  count = Recentword_counts
+)
+barplot(df$count, names.arg = df$keyword, col = "black",
+        main = "Keyword Frequency in Recent Transcript",
+        ylab = "Count", las = 2)
+
+getSymbols("AAPL", from = "2020-01-01", auto.assign = TRUE)
+
+start_date_3mo <- as.Date("2024-7-31")
+end_date_3mo <- as.Date("2024-10-31")
+
+start_date_6mo <- as.Date("2025-11-01")
+end_date_6mo <- as.Date("2024-01-30")
+
+get_closest_price <- function(prices, target_date) {
+  index_dates <- index(prices)
+  closest_idx <- which.min(abs(index_dates - target_date))
+  return(as.numeric(Cl(prices[closest_idx])))
+}
+
+price_3mo_start <- get_closest_price(AAPL, start_date_3mo)
+price_3mo_end   <- get_closest_price(AAPL, end_date_3mo)
+price_6mo_start <- get_closest_price(AAPL, start_date_6mo)
+price_6mo_end   <- get_closest_price(AAPL, end_date_6mo)
+
+return_3mo <- (price_3mo_end - price_3mo_start) / price_3mo_start * 100
+return_6mo <- (price_6mo_end - price_6mo_start) / price_6mo_start * 100
+
+cat("Previous Return:", round(return_3mo, 2), "%\n")
+cat("Recent Return:", round(return_6mo, 2), "%\n")
